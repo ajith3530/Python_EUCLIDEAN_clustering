@@ -20,7 +20,7 @@ class KdTree:
     def __init__(self):
         self.root = None
         self.kdtree_display_dict = dict()
-        self.kdtree_search_dict = dict()
+
 
     def insert_points(self, pcd_dataframe, display_output=False):
         """
@@ -36,7 +36,7 @@ class KdTree:
         # If display_output is enabled, then display the contents of Kdtree
         if display_output:
             print("Kdtree Build Complete")
-            self.display_Kdtree(self.root)
+            self.display_kdtree(self.root)
             for pair in self.kdtree_display_dict.items():
                 print(f"Depth = {pair[0]}, Points = {pair[1]} ")
         return self.root
@@ -65,16 +65,14 @@ class KdTree:
             node.left_node = self.build_kdtree(node.left_node ,depth + 1 ,point ,point_id)
         return node
 
-    def remove_elements(self):
-        pass
-
-    def search_elements(self, node, search_point ,distance_threshold ,depth=0):
+    def search_elements(self, node, search_point, distance_threshold, depth=0, kdtree_search_results=set()):
         """
         :param node: node of kdtree
         :param search_point: (x,y,z) point
         :param distance_threshold: pcd elements near point
         :param depth: level of the kdtree depth
-        :return: ids which are near point
+        :param kdtree_search_results: level of the kdtree depth
+        :return: ids which can be considered as near points
         """
         depth %= 3
         current_node = node
@@ -88,26 +86,20 @@ class KdTree:
                                            math.pow((current_node.point["Y"] - search_point[1]), 2) +
                                            math.pow((current_node.point["Z"] - search_point[2]), 2))
                 if point_distance <= distance_threshold:
-                    try:
-                        # If there are values already present, append the list with the id.
-                        # Keys in a dictionary can only accept tuples as they are hashable data structures,
-                        # list, dict, set won't work here.
-                        self.kdtree_search_dict[search_point].extend([current_node.point_id])
-                    except KeyError:
-                        # If there are no values at the level, add value as first id
-                        self.kdtree_search_dict[search_point] = [current_node.point_id]
+                    kdtree_search_results.add(current_node.point_id)
             # Iterate recursively
             if current_node.point[self.__dict_key(depth)] < search_point[depth]:
                 # If value at level less than current node point, add it as a right node
-                self.search_elements(current_node.right_node, search_point, distance_threshold, depth+1)
+                self.search_elements(current_node.right_node, search_point, distance_threshold,
+                                     depth+1, kdtree_search_results)
 
             else:
                 # If value at level is more than current node point, add it as a left node
-                self.search_elements(current_node.left_node, search_point, distance_threshold, depth+1)
+                self.search_elements(current_node.left_node, search_point, distance_threshold,
+                                     depth+1, kdtree_search_results)
+            return kdtree_search_results
 
-
-
-    def display_Kdtree(self, node, depth=0):
+    def display_kdtree(self ,node ,depth=0):
         """
         updates the self.kdtree_dict with the points are corresponding depth
         :param node: root node
@@ -129,14 +121,14 @@ class KdTree:
                 # increment the value of depth
                 depth += 1
                 # at every node, call the recursive function
-                self.display_Kdtree(left_node ,depth)
+                self.display_kdtree(left_node ,depth)
 
             if current_node.right_node is not None:
                 right_node = current_node.right_node
                 # increment the value of depth
                 depth += 1
                 # at every node, call the recursive function
-                self.display_Kdtree(right_node ,depth)
+                self.display_kdtree(right_node ,depth)
 
     @staticmethod
     def __dict_key(number):
