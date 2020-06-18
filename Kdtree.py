@@ -13,7 +13,7 @@ class Node:
         self.right_node = None
 
 
-class KdTree:
+class KdTree_class:
     """
     Implementation of KDtree
     """
