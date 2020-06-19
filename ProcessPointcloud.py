@@ -3,6 +3,7 @@ Processing of Point Cloud data
 """
 from Kdtree import KdTree_class
 import pandas as pd
+import copy
 
 class ProcessPointCloud:
     """
@@ -54,35 +55,44 @@ class ProcessPointCloud:
                 self.pcd_data.loc[index]["Y"],
                 self.pcd_data.loc[index]["Z"])
 
-    def find_clusters(self, current_point, base_cluster, index, threshold, cluster_parameters, processed_flag):
+    def find_clusters(self, current_point_, base_cluster_, index_, threshold_, cluster_parameters_, processed_flag_):
         """
         search for clusters
-        :param current_point: current point being processed.
-        :param base_cluster: already known clusters.
-        :param index: index of the point.
-        :param threshold:  min distance for cluster identification.
-        :param cluster_parameters: Cluster parameters {min_size, max_size}
-        :param processed_flag: list containing status of points which have been identified as clusters.
+        :param current_point_: current point being processed.
+        :param base_cluster_: already known clusters.
+        :param index_: index of the point.
+        :param threshold_:  min distance for cluster identification.
+        :param cluster_parameters_: Cluster parameters {min_size, max_size}
+        :param processed_flag_: list containing status of points which have been identified as clusters.
         """
         # Considering points which have not been processed before, and are within are cluster parameter limits
-        if not processed_flag[index] and len(base_cluster) < cluster_parameters["max_size"]:
-            processed_flag[index] = True
-            base_cluster.add(index)
+        if not processed_flag_[index_] and len(base_cluster_) < cluster_parameters_["max_size"]:
+            processed_flag_[index_] = True
+            base_cluster_.add(index_)
             # Returns id listof the points which are near the current point,
             # id and index would be the same because of the unpacking design followed in build_kdtree method.
-            nearby_points = self.kdtree_main.search_elements(node=self.kdtree_root_node, search_point=current_point,
-                                                             distance_threshold=threshold, depth=0)
+            nearby_points = self.kdtree_main.search_elements(node=self.kdtree_root_node ,search_point=current_point_ ,
+                                                             distance_threshold=threshold_ ,depth=0)
+            # This line was added to retain the orginal variable during the process of recursion
+            # Using the same variable resulted in changing the contents during iteration
+            # which raised an exception.
+            nearby_points_ = copy.copy(nearby_points)
+            # If points are present search for more clusters
+            if len(nearby_points_):
+                for index_ in nearby_points_:
+                    if not processed_flag_[index_]:
+                        # Get the point in (x,y,z) for as required by the method
+                        point = self.get_point(index_)
+                        # Recursively iterate through all the points
+                        self.find_clusters(point, base_cluster_, index_,
+                                           threshold_, cluster_parameters_, processed_flag_)
+    def visualize_clusters(self, clusters):
+        pass
 
-            if len(nearby_points):
-                for index in nearby_points:
-                    if not processed_flag[index]:
-                        point = self.get_point(index)
-                        self.find_clusters(current_point=point, base_cluster=self.kdtree_root_node, index,
-                                           threshold, cluster_parameters, processed_flag)
 
 if __name__ == "__main__":
-    APPLICATION = ProcessPointCloud(pcd_file="point_cloud_data_sample.xyz", nrows_value=10, display_output_flag=True)
-    clusters = APPLICATION.euclidean_clustering(distance_threshold=0.5, cluster_parameters={"min_size":2, "max_size":5})
+    APPLICATION = ProcessPointCloud(pcd_file="point_cloud_data_sample.xyz", nrows_value=50, display_output_flag=False)
+    clusters = APPLICATION.euclidean_clustering(distance_threshold=0.25, cluster_parameters={"min_size":2, "max_size":10})
     print(clusters)
 
 
