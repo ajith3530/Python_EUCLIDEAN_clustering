@@ -4,6 +4,9 @@ Processing of Point Cloud data
 from Kdtree import KdTree_class
 import pandas as pd
 import copy
+import plotly.graph_objects as go
+
+
 
 class ProcessPointCloud:
     """
@@ -87,13 +90,39 @@ class ProcessPointCloud:
                         self.find_clusters(point, base_cluster_, index_,
                                            threshold_, cluster_parameters_, processed_flag_)
     def visualize_clusters(self, clusters):
-        pass
+        trace_1 = go.Scatter3d(x=self.pcd_data.X,
+                             y=self.pcd_data.Y,
+                             z=self.pcd_data.Z ,
+                             mode='markers')
+        # extract points from clusters
+        cluster_points = pd.DataFrame(columns={"Cluster_id", "X", "Y", "Z"})
+        for key in clusters:
+            # Get all the indexes related to the cluster id = key
+            cluster_point_indexes = clusters[key]
+            for point_index in cluster_point_indexes:
+                point = self.get_point(point_index)
+                cluster_points = cluster_points.append({"Cluster_id": key,
+                                                         "X": point[0],
+                                                         "Y": point[1],
+                                                         "Z": point[2]}, ignore_index=True)
+        unique_clusters = []
+        for cluster_id in cluster_points.Cluster_id.unique():
+            cluster_traces = [go.Scatter3d(x=cluster_points[cluster_points["Cluster_id"] == cluster_id].X ,
+                                   y=cluster_points[cluster_points["Cluster_id"] == cluster_id].Y ,
+                                   z=cluster_points[cluster_points["Cluster_id"] == cluster_id].Z ,
+                                   mode='markers')]
+            unique_clusters.extend(cluster_traces)
+        data = [trace_1]
+        data.extend(unique_clusters)
+        fig = go.Figure(data)
+        fig.show()
 
 
 if __name__ == "__main__":
-    APPLICATION = ProcessPointCloud(pcd_file="point_cloud_data_sample.xyz", nrows_value=50, display_output_flag=False)
-    clusters = APPLICATION.euclidean_clustering(distance_threshold=0.25, cluster_parameters={"min_size":2, "max_size":10})
-    print(clusters)
+    APPLICATION = ProcessPointCloud(pcd_file="point_cloud_data_sample.xyz", nrows_value=1500, display_output_flag=False)
+    clusters = APPLICATION.euclidean_clustering(distance_threshold=10, cluster_parameters={"min_size":10, "max_size":500})
+    # print(clusters)
+    APPLICATION.visualize_clusters(clusters)
 
 
 
