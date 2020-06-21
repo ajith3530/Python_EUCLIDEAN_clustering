@@ -29,10 +29,9 @@ class KdTree_class:
         """
         for row in pcd_dataframe.iterrows():
             x, y, z, point_id = row[1]["X"], row[1]["Y"], row[1]["Z"], row[0]
-            point = [x, y, z]
+            point = (x, y, z)
             level = 0
             self.root = self.build_kdtree(self.root, level, point, point_id)
-
         # If display_output is enabled, then display the contents of Kdtree
         if display_output:
             print("Kdtree Build Complete")
@@ -59,10 +58,10 @@ class KdTree_class:
         # self.__dict_key returns X,Y,Z based on the level value. Check function for detailed description
         if node.point[self.__dict_key(depth)] < current_node.point[self.__dict_key(depth)]:
             # If value at level less than current node point, add it as a right node
-            node.right_node = self.build_kdtree(node.right_node ,depth + 1 ,point ,point_id)
+            node.right_node = self.build_kdtree(node.right_node, depth + 1, point, point_id)
         else:
             # If value at level is more than current node point, add it as a left node
-            node.left_node = self.build_kdtree(node.left_node ,depth + 1 ,point ,point_id)
+            node.left_node = self.build_kdtree(node.left_node, depth + 1, point, point_id)
         return node
 
     def search_elements(self, node, search_point, distance_threshold, depth=0, kdtree_search_results=set()):
@@ -87,19 +86,21 @@ class KdTree_class:
                                            math.pow((current_node.point["Z"] - search_point[2]), 2))
                 if point_distance <= distance_threshold:
                     kdtree_search_results.add(current_node.point_id)
+                else:
+                    pass
             # Iterate recursively
-            if current_node.point[self.__dict_key(depth)] < search_point[depth]:
-                # If value at level less than current node point, add it as a right node
+            # if current_node.point[self.__dict_key(depth)] < search_point[depth]:
+            if current_node.point[self.__dict_key(depth)] < search_point[depth] + distance_threshold:
                 self.search_elements(current_node.right_node, search_point, distance_threshold,
                                      depth+1, kdtree_search_results)
 
-            else:
-                # If value at level is more than current node point, add it as a left node
+            # else:
+            if current_node.point[self.__dict_key(depth)] > search_point[depth] - distance_threshold:
                 self.search_elements(current_node.left_node, search_point, distance_threshold,
                                      depth+1, kdtree_search_results)
             return kdtree_search_results
 
-    def display_kdtree(self ,node ,depth=0):
+    def display_kdtree(self, node, depth=0):
         """
         updates the self.kdtree_dict with the points are corresponding depth
         :param node: root node
@@ -109,10 +110,14 @@ class KdTree_class:
         current_node = node
         try:
             # If there are values already present, append the list with the point.
-            self.kdtree_display_dict[depth].extend(current_node.point)
+            self.kdtree_display_dict[depth].extend([(current_node.point["X"],
+                                                    current_node.point["Y"],
+                                                    current_node.point["Z"])])
         except KeyError:
             # If there are no values at the level, add value as first point
-            self.kdtree_display_dict[depth] = [current_node.point]
+            self.kdtree_display_dict[depth] = [(current_node.point["X"],
+                                                current_node.point["Y"],
+                                                current_node.point["Z"])]
         # Run the recursion until a function hits the empty node
         if current_node is not None:
             # Check
